@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#070b14">
+<title>108 — Online Card Game</title>
+<style>
+
+  :root {
+    --cw: 76px; --ch: 108px; --ow: 40px; --oh: 58px; --meh: 232px;
+    --gold: #e8c26a; --red: #d62f3a; --ink: #14181f;
+    --panel: rgba(7,11,20,.88); --line: rgba(255,255,255,.09);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; height:100%; background:#070b14; color:#fff; overflow:hidden;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  #app { height:100%; display:flex; flex-direction:column;
+    background: radial-gradient(ellipse at 50% 28%, #14233f 0%, #0a1020 45%, #05080f 100%); }
+
+  /* ---------- Top bar ---------- */
+  .topbar { height:62px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    padding:0 14px; background:rgba(4,7,14,.85); border-bottom:1px solid var(--line); }
+  .tb-left, .tb-right { display:flex; align-items:center; gap:10px; }
+  .sqbtn { width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line);
+    color:#dfe6f3; display:grid; place-items:center; cursor:pointer; padding:0; }
+  .sqbtn:hover { background:rgba(255,255,255,.1); }
+  .sqbtn svg { width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .logo-badge { position:relative; overflow:hidden; width:48px; height:48px; border-radius:12px; display:grid; place-items:center; font-weight:950; font-size:19px; letter-spacing:-1px; color:#f5f7fb;
+    background:linear-gradient(145deg,#f7f8fb 0%,#8e969f 14%,#141920 30%,#030508 55%,#6e7781 78%,#171b21 100%); border:1px solid rgba(240,245,255,.78); text-shadow:0 2px 2px #000,0 0 12px rgba(255,255,255,.3);
+    box-shadow:0 3px 12px rgba(0,0,0,.75),inset 0 0 0 2px rgba(255,255,255,.13),inset 0 -8px 16px rgba(0,0,0,.65); }
+  .logo-badge::before { content:""; position:absolute; inset:-35% 48% -35% -30%; transform:rotate(28deg); background:linear-gradient(90deg,transparent,rgba(255,255,255,.52),transparent); pointer-events:none; animation:logoShine 4.8s ease-in-out infinite; }
+  .logo-badge { isolation:isolate; transform-style:preserve-3d; }
+  .logo-badge::after { filter:drop-shadow(0 1px 2px #000); }
+  @keyframes logoShine { 0%,58% { left:-55%; opacity:0; } 68% { opacity:.9; } 88%,100% { left:120%; opacity:0; } }
+  .panelbox .logo-badge { box-shadow:0 10px 28px rgba(0,0,0,.75),0 0 26px rgba(215,224,238,.14),inset 0 0 0 2px rgba(255,255,255,.18),inset 0 -10px 18px rgba(0,0,0,.72); }
+  .panelbox h1 { text-shadow:0 2px 0 #30343a,0 5px 18px rgba(220,230,245,.18); }
+  .logo-badge::after { content:'♛'; position:absolute; top:-5px; left:0; right:0; text-align:center; font-size:12px; line-height:1; color:#fff; text-shadow:0 1px 3px #000,0 0 5px rgba(255,255,255,.5); pointer-events:none; }
+  .setup .logo-badge, .panelbox .logo-badge { animation:logoFloat 4.5s ease-in-out infinite; }
+  .panelbox .logo-badge { border-radius:22px; transform:perspective(500px) rotateX(7deg); }
+  .panelbox .logo-badge::after { top:1px; font-size:15px; }
+  .panelbox .logo-badge { text-shadow:0 2px 0 #4b5058,0 5px 10px #000,0 0 18px rgba(255,255,255,.34); }
+  @keyframes logoFloat { 0%,100% { transform:translateY(0) rotate(-1deg); } 50% { transform:translateY(-4px) rotate(1deg); } }
+  .brand { line-height:1.1; }
+  .brand b { font-size:22px; letter-spacing:.5px; display:block; }
+  .brand span { font-size:11px; letter-spacing:2.2px; color:#9fb0cc; }
+
+  /* ---------- Stage ---------- */
+  .stage { flex:1; min-height:0; position:relative; }
+  .area { position:absolute; left:0; right:0; top:0; bottom:calc(var(--meh) - 34px); }
+  .oval { position:absolute; left:6%; right:6%; top:17%; bottom:0; border-radius:999px; padding:15px;
+    background:linear-gradient(165deg,#e0e3e8 0%,#555c65 8%,#12161c 22%,#05070a 52%,#4a5058 78%,#a4aab2 100%);
+    box-shadow:0 22px 60px rgba(0,0,0,.8),inset 0 2px 0 rgba(255,255,255,.4),0 0 24px rgba(205,215,230,.08); }
+  .felt { position:absolute; inset:15px; border-radius:999px;
+    background:radial-gradient(ellipse at 50% 36%,#20242a 0%,#0d1015 48%,#030405 100%);
+    box-shadow:inset 0 0 0 2px rgba(210,218,230,.22),inset 0 0 80px rgba(0,0,0,.8); }
+  .watermark { position:absolute; left:50%; top:13%; transform:translateX(-50%); text-align:center; pointer-events:none; color:rgba(210,218,230,.13); }
+  .watermark::before { content:'♛'; display:block; margin-bottom:-12px; font-size:clamp(20px,3vw,34px); color:rgba(220,225,235,.18); text-shadow:0 2px 12px rgba(255,255,255,.08); }
+  .watermark svg { width:34px; height:24px; fill:currentColor; display:block; margin:0 auto -2px; }
+  .watermark b { font-size:clamp(40px,7vw,78px); font-weight:900; letter-spacing:2px; line-height:1; }
+  .center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:clamp(26px,5vw,64px); padding-top:2%; }
+  .pile { position:relative; text-align:center; }
+  .pile .cap { position:absolute; left:0; right:0; top:calc(100% + 6px); font-size:12px; color:#d9f0e2; text-shadow:0 1px 2px #000; white-space:nowrap; }
+  .deck-stack { position:relative; width:var(--cw); height:var(--ch); cursor:pointer; }
+  .deck-stack .card { position:absolute; left:0; top:0; }
+  .deck-stack .card:nth-child(1) { transform:translate(-4px,4px); }
+  .deck-stack .card:nth-child(2) { transform:translate(-2px,2px); }
+  .suitdot { position:absolute; right:-14px; top:-14px; width:34px; height:34px; border-radius:50%; background:#fff; display:grid; place-items:center;
+    font-size:21px; box-shadow:0 3px 8px rgba(0,0,0,.55); z-index:3; }
+  .suitdot.red { color:var(--red); } .suitdot.blk { color:var(--ink); }
+  .penalty { position:absolute; left:50%; top:calc(50% - var(--ch)/2 - 44px); transform:translateX(-50%); background:linear-gradient(#e0414c,#a91c27);
+    padding:6px 14px; border-radius:999px; font-weight:800; font-size:14px; white-space:nowrap; box-shadow:0 0 18px rgba(255,70,80,.65); animation:pulse 1.2s infinite; }
+  .msg { position:absolute; left:50%; bottom:5%; transform:translateX(-50%); text-align:center; width:min(86%,520px); }
+  .msg .log { font-size:12px; color:#cfe8da; opacity:.9; min-height:16px; }
+  .msg .st { display:inline-block; margin-top:4px; padding:5px 16px; border-radius:999px; background:rgba(0,0,0,.45); border:1px solid rgba(232,194,106,.4);
+    color:var(--gold); font-weight:700; font-size:14px; min-height:28px; }
+
+  .chip.turn .av { box-shadow:0 0 0 2px rgba(232,194,106,.68),0 0 0 5px rgba(232,194,106,.08),0 0 10px rgba(232,194,106,.48); animation:turnGlow 1.35s ease-in-out infinite alternate; }
+  @keyframes turnGlow { from { box-shadow:0 0 0 2px rgba(232,194,106,.42),0 0 6px rgba(232,194,106,.28); } to { box-shadow:0 0 0 2px rgba(255,224,151,.9),0 0 12px rgba(232,194,106,.6); } }
+  .intro-screen { position:fixed; inset:0; z-index:500; background:radial-gradient(ellipse at 50% 35%,#20252d 0%,#090c11 48%,#000 100%); display:flex; align-items:center; justify-content:center; flex-direction:column; padding:18px; overflow:auto; }
+  .intro-screen::before { content:'108'; position:absolute; top:3vh; left:50%; transform:translateX(-50%); color:rgba(230,235,245,.1); font-size:clamp(44px,8vw,92px); font-weight:1000; letter-spacing:.08em; pointer-events:none; text-shadow:0 4px 30px rgba(255,255,255,.08); }
+  .intro-screen video { position:relative; z-index:1; }
+  .intro-screen video { width:min(100%,1200px); max-height:76vh; object-fit:contain; background:#000; border:1px solid rgba(230,235,245,.22); border-radius:12px; box-shadow:0 20px 80px #000,0 0 35px rgba(210,220,235,.08); }
+  .intro-screen .intro-wait { color:#d7dce4; margin-top:14px; text-align:center; font-weight:700; }
+  .intro-sound { margin-top:12px; min-width:180px; min-height:42px; border:1px solid rgba(235,239,247,.35); border-radius:999px; background:linear-gradient(135deg,#20262e,#080a0e); color:#f5f7fb; font-weight:800; letter-spacing:.4px; cursor:pointer; box-shadow:0 4px 18px #000; }
+  .intro-sound:hover { border-color:#fff; }
+  .intro-skip { margin-top:14px; min-width:180px; min-height:42px; border:1px solid rgba(235,239,247,.5); border-radius:999px; background:linear-gradient(135deg,#252b33,#080a0e); color:#f5f7fb; font-weight:800; letter-spacing:.7px; cursor:pointer; box-shadow:0 4px 18px #000; }
+  .intro-skip:hover { border-color:#fff; background:linear-gradient(135deg,#3a424d,#101319); }
+  .intro-wait .silver-mark { color:#fff; letter-spacing:2px; }
+  .result-screen { position:fixed; inset:0; z-index:450; display:flex; align-items:center; justify-content:center; padding:18px; background:rgba(2,5,10,.88); backdrop-filter:blur(8px); }
+  .result-card { position:relative; overflow:hidden; width:min(100%,460px); text-align:center; padding:34px 24px 28px; border:1px solid rgba(220,228,240,.38); border-radius:22px; background:radial-gradient(ellipse at 50% 0%,rgba(190,202,220,.12),transparent 52%),linear-gradient(145deg,#171b21,#06080c 68%); box-shadow:0 24px 90px rgba(0,0,0,.78),inset 0 1px rgba(255,255,255,.14); }
+  .result-card::before { content:'♛'; display:block; color:#e9edf4; font-size:36px; line-height:1; margin-bottom:8px; text-shadow:0 2px 0 #555b64,0 0 22px rgba(255,255,255,.28); }
+  .result-card h2 { text-shadow:0 2px 0 #383c43,0 0 22px rgba(240,220,170,.15); }
+  .result-card h2 { color:#f4ce77; margin:0 0 12px; font-size:clamp(24px,4vw,34px); }
+  .result-card p { color:#c8d2e4; margin:0 0 22px; }
+  .result-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .result-actions button { min-height:46px; }
+
+  /* ---------- Cards ---------- */
+  .card { width:var(--cw); height:var(--ch); border-radius:9px; background:linear-gradient(160deg,#ffffff,#eceff4); color:var(--ink);
+    position:relative; box-shadow:0 3px 8px rgba(0,0,0,.5); font-weight:800; user-select:none; flex:0 0 auto; }
+  .card.red { color:var(--red); }
+  .card .tl { position:absolute; left:7px; top:5px; text-align:center; line-height:1; font-size:calc(var(--cw)*.27); }
+  .card .tl i { display:block; font-style:normal; font-size:calc(var(--cw)*.24); margin-top:1px; }
+  .card .br { position:absolute; right:7px; bottom:5px; text-align:center; line-height:1; font-size:calc(var(--cw)*.27); transform:rotate(180deg); }
+  .card .br i { display:block; font-style:normal; font-size:calc(var(--cw)*.24); margin-top:1px; }
+  .card .mid { position:absolute; inset:0; display:grid; place-items:center; font-size:calc(var(--cw)*.5); padding-top:6px; }
+  .card.back { background:radial-gradient(circle at 50% 40%, #3b6fd1 0%, #1f4aa8 55%, #12307a 100%); border:2px solid #dfe8ff; overflow:hidden; }
+  .card.back::before { content:""; position:absolute; inset:5px; border:1.5px solid rgba(223,232,255,.55); border-radius:6px; }
+  .card.back::after { content:"108"; position:absolute; inset:0; display:grid; place-items:center; font-weight:900; color:rgba(223,232,255,.85);
+    font-size:calc(var(--cw)*.3); letter-spacing:1px; }
+  .card.pop { animation:pop .42s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes pop { from { transform:translateY(60px) scale(.75) rotate(-12deg); opacity:0; } to { transform:none; opacity:1; } }
+  @keyframes pulse { 50% { box-shadow:0 0 28px rgba(255,70,80,.95); } }
+
+  /* ---------- Opponents ---------- */
+  .seat { position:absolute; display:flex; flex-direction:column; align-items:center; z-index:4; }
+  .s-top { left:50%; top:1%; transform:translateX(-50%); }
+  .s-topL { left:27%; top:3%; transform:translateX(-50%); }
+  .s-topR { left:73%; top:3%; transform:translateX(-50%); }
+  .s-left { left:1.5%; top:30%; flex-direction:row; align-items:flex-start; }
+  .s-right { right:1.5%; top:30%; flex-direction:row-reverse; align-items:flex-start; }
+  .chip { display:flex; align-items:center; gap:10px; padding:6px 16px 6px 6px; border-radius:999px; background:var(--panel);
+    border:1.5px solid rgba(232,194,106,.35); box-shadow:0 4px 14px rgba(0,0,0,.55); transition:.25s; position:relative; z-index:2; }
+  .seat.turn .chip { border-color:rgba(232,194,106,.22); box-shadow:0 4px 14px rgba(0,0,0,.55); }
+  .seat.out { opacity:.45; }
+  .av { width:46px; height:46px; border-radius:50%; overflow:hidden; flex:0 0 auto; border:2px solid var(--gold); background:#1a2438; }
+  .av svg { width:100%; height:100%; display:block; }
+  .info .nm { font-weight:700; font-size:16px; display:flex; align-items:center; gap:6px; }
+  .info .nm svg { width:18px; height:14px; fill:var(--gold); }
+  .info .ct { font-size:13px; color:#c9d3e6; display:flex; align-items:center; gap:7px; white-space:nowrap; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#27d36b; box-shadow:0 0 6px #27d36b; display:inline-block; }
+  .fan { position:relative; margin-top:-8px; }
+  .fan .card { position:absolute; width:var(--ow); height:var(--oh); border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,.55); }
+  .fan .card.back::after { font-size:12px; }
+  .fan .card.back::before { inset:3px; border-radius:4px; }
+  .fan.v { margin-top:18px; margin-left:-10px; }
+  .s-right .fan.v { margin-left:0; margin-right:-10px; }
+
+  /* ---------- Me ---------- */
+  .me { position:absolute; left:0; right:0; bottom:0; height:var(--meh); display:flex; flex-direction:column; align-items:center; z-index:5; }
+  .me .chip { margin-bottom:4px; }
+  .hand { position:relative; width:100%; max-width:980px; height:calc(var(--ch) + 40px); }
+  .hand .card { position:absolute; bottom:0; cursor:pointer; transform-origin:50% 130%; transition:transform .2s, left .2s, filter .2s; }
+  .hand .card.sel { box-shadow:0 0 0 3px var(--gold), 0 12px 22px rgba(0,0,0,.6); z-index:99 !important; }
+  .hand .card.dim { filter:brightness(.55) saturate(.6); }
+  .actions { display:flex; gap:12px; justify-content:center; padding:10px 14px; margin-top:6px; background:var(--panel); border:1px solid var(--line); border-radius:16px; }
+  .btn { display:flex; align-items:center; justify-content:center; gap:9px; border:0; border-radius:11px; padding:0 26px; height:50px; min-width:158px;
+    font-weight:700; font-size:16px; color:#fff; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 3px 10px rgba(0,0,0,.5); }
+  .btn svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linejoin:round; }
+  .btn.play { background:linear-gradient(#26b866,#107a3f); }
+  .btn.draw { background:linear-gradient(#2a86ea,#1352b3); }
+  .btn.pass { background:linear-gradient(#8591a8,#4f5a70); }
+  .btn:disabled { opacity:.38; cursor:not-allowed; filter:saturate(.5); }
+  .btn:active:not(:disabled) { transform:translateY(2px); }
+
+  /* ---------- Side panels (desktop) ---------- */
+  .panel { position:absolute; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px 14px; font-size:13px; z-index:6; }
+  .p-status { left:16px; bottom:16px; min-width:210px; }
+  .p-status .row { display:flex; align-items:center; gap:10px; padding:3px 0; font-size:15px; }
+  .p-status .row svg { width:26px; height:26px; stroke:#9fb0cc; fill:none; stroke-width:1.6; }
+  .p-legend { right:16px; bottom:16px; min-width:196px; }
+  .p-legend h4 { margin:0 0 8px; font-size:12px; color:#dfe6f3; }
+  .p-legend .li { display:flex; align-items:center; gap:10px; padding:3px 0; }
+  .p-legend .sy { width:22px; text-align:center; font-size:19px; }
+  .p-legend hr { border:0; border-top:1px solid var(--line); margin:7px 0; }
+  .pdot { width:18px; height:18px; border-radius:50%; display:inline-block; }
+  @media (max-width:1180px) { .p-legend { display:none; } }
+  @media (max-width:900px)  { .p-status { display:none; } }
+
+  /* ---------- Overlays ---------- */
+  .overlay { position:absolute; inset:0; background:rgba(3,6,12,.78); display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px;
+    z-index:50; text-align:center; padding:20px; backdrop-filter:blur(3px); }
+  .overlay.show { display:flex; }
+  .overlay h2 { margin:0; color:var(--gold); font-size:26px; }
+  .overlay p { margin:0; color:#cdd7ea; }
+  .suitpick { display:flex; gap:14px; }
+  .suitpick .sp { width:68px; height:68px; border-radius:16px; background:#fff; display:grid; place-items:center; font-size:42px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.6); transition:.15s; }
+  .suitpick .sp:hover { transform:translateY(-4px); }
+  .sp.red { color:var(--red); } .sp.blk { color:var(--ink); }
+  .spinner { width:48px; height:48px; border:5px solid rgba(255,255,255,.2); border-top-color:var(--gold); border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .modal { background:#0c1426; border:1px solid var(--line); border-radius:18px; padding:22px; max-width:480px; width:100%; text-align:left; max-height:80vh; overflow:auto; }
+  .modal h3 { margin:0 0 10px; color:var(--gold); }
+  .modal .rl { font-size:14px; line-height:1.55; color:#d3dcee; }
+  .modal .rl b { color:var(--gold); }
+  .gbtn { background:linear-gradient(#f3d27e,#cfa13c); color:#3b2414; font-weight:800; border:0; border-radius:12px; padding:14px 28px; font-size:16px; cursor:pointer; box-shadow:0 3px 0 #8a6a1f; }
+  .gbtn.sec { background:rgba(255,255,255,.1); color:#fff; box-shadow:none; border:1px solid var(--line); }
+
+  /* ---------- Shuffle break ---------- */
+  .overlay.shuffle { background:rgba(2,5,10,.38); backdrop-filter:none; padding:0; }
+  .sh-panel { position:relative; width:min(580px,92%); margin-top:44px; padding:62px 22px 16px; text-align:center;
+    background:linear-gradient(180deg,#0b1730,#060c1a); border:1.5px solid rgba(70,140,255,.5);
+    border-radius:22px; box-shadow:0 0 0 1px rgba(255,255,255,.04), 0 0 40px rgba(40,110,255,.28), 0 20px 50px rgba(0,0,0,.65); }
+  .sh-ring { position:absolute; left:50%; top:-58px; width:116px; height:116px; transform:translateX(-50%); }
+  .sh-ring svg { width:100%; height:100%; transform:rotate(-90deg); display:block; filter:drop-shadow(0 0 12px rgba(50,140,255,.7)); }
+  .sh-ring .bg { fill:#0a1730; stroke:rgba(255,255,255,.1); stroke-width:8; }
+  .sh-ring .fg { fill:none; stroke:#2f8cff; stroke-width:8; stroke-linecap:round; stroke-dasharray:326.7; stroke-dashoffset:0; animation:ringdown 5s linear forwards; }
+  .sh-ring b { position:absolute; inset:0; display:grid; place-items:center; font-size:56px; font-weight:800; color:#fff; }
+  @keyframes ringdown { to { stroke-dashoffset:326.7; } }
+  .sh-panel h2 { margin:0; color:#fff; font-size:34px; font-weight:800; }
+  .sh-panel .sub { color:#7fb2ff; font-size:18px; margin:4px 0 10px; }
+  .sh-cards { position:relative; height:104px; width:210px; margin:0 auto 10px; }
+  .sh-cards .card { position:absolute; left:50%; top:8px; --cw:58px; --ch:84px; margin-left:-29px; animation:shuf 1.1s ease-in-out infinite; }
+  .sh-cards .card:nth-child(1) { --x:-62px; --r:-14deg; animation-delay:0s; }
+  .sh-cards .card:nth-child(2) { --x:-21px; --r:-4deg; animation-delay:.12s; }
+  .sh-cards .card:nth-child(3) { --x:21px; --r:4deg; animation-delay:.24s; }
+  .sh-cards .card:nth-child(4) { --x:62px; --r:14deg; animation-delay:.36s; }
+  @keyframes shuf { 0%,100% { transform:translate(var(--x),0) rotate(var(--r)); } 50% { transform:translate(calc(var(--x)*.15),-12px) rotate(0deg); } }
+  .sh-arrow { position:absolute; top:34px; width:30px; height:30px; stroke:#4a90ff; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; opacity:.8; animation:spin 2.4s linear infinite; }
+  .sh-arrow.l { left:6px; } .sh-arrow.r { right:6px; animation-direction:reverse; }
+  .sh-steps { list-style:none; margin:0; padding:0; text-align:left; }
+  .sh-steps li { display:flex; align-items:center; gap:14px; padding:5px 4px; font-size:14px; color:#dbe5f7; }
+  .sh-steps li i { flex:0 0 28px; width:28px; height:28px; border-radius:50%; background:#18407e; border:1px solid rgba(110,170,255,.6);
+    display:grid; place-items:center; font-style:normal; font-weight:700; font-size:14px; }
+  .sh-foot { display:flex; align-items:center; gap:12px; margin-top:8px; color:#8da0c0; font-size:13px; }
+  .sh-foot::before, .sh-foot::after { content:""; flex:1; border-top:1px solid rgba(255,255,255,.14); }
+  @media (max-width:700px) {
+    .sh-panel { padding:56px 14px 12px; margin-top:36px; } .sh-ring { width:96px; height:96px; top:-48px; } .sh-ring b { font-size:44px; }
+    .sh-panel h2 { font-size:26px; } .sh-panel .sub { font-size:15px; } .sh-steps li { font-size:12px; gap:10px; padding:3px 2px; }
+    .sh-steps li i { width:22px; height:22px; flex-basis:22px; font-size:12px; }
+    .sh-cards { height:96px; }
+  }
+  @media (max-height:560px) { .sh-steps { display:none; } }
+
+  /* ---------- Setup ---------- */
+  .setup { margin:auto; width:min(440px,92%); text-align:center; background:var(--panel); border:1px solid rgba(232,194,106,.35); border-radius:22px; padding:30px 26px; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .setup .logo-badge { width:84px; height:84px; font-size:34px; margin:0 auto 10px; border-radius:20px; }
+  .setup h1 { margin:0; font-size:30px; letter-spacing:1px; }
+  .setup .sub { color:#9fb0cc; letter-spacing:3px; font-size:12px; margin-bottom:18px; }
+  .counts { display:flex; gap:12px; justify-content:center; margin:14px 0 22px; }
+  .counts button { width:66px; height:66px; border-radius:16px; border:2px solid rgba(232,194,106,.5); background:transparent; color:var(--gold); font-size:26px; font-weight:800; cursor:pointer; }
+  .counts button.on { background:var(--gold); color:#3b2414; }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:700px) {
+    :root { --cw:56px; --ch:80px; --ow:26px; --oh:38px; --meh:208px; }
+    .topbar { height:54px; padding:0 10px; }
+    .sqbtn { width:38px; height:38px; } .logo-badge { width:40px; height:40px; font-size:16px; } .brand b { font-size:18px; } .brand span { font-size:9px; }
+    .oval { left:2%; right:2%; top:22%; padding:10px; }
+    .felt { inset:10px; }
+    .chip { padding:4px 10px 4px 4px; gap:6px; } .av { width:32px; height:32px; }
+    .info .nm { font-size:12px; } .info .ct { font-size:11px; }
+    .s-left { left:0; top:36%; } .s-right { right:0; top:36%; }
+    .s-topL { left:24%; top:2%; } .s-topR { left:76%; top:2%; }
+    .actions { padding:8px; gap:8px; } .btn { min-width:0; height:44px; padding:0 14px; font-size:14px; }
+    .watermark b { font-size:40px; } .watermark { top:6%; }
+    .center { gap:22px; }
+    .msg { bottom:3%; } .msg .st { font-size:12px; padding:4px 10px; }
+    .suitdot { width:28px; height:28px; font-size:17px; right:-10px; top:-10px; }
+    .penalty { font-size:12px; }
+  }
+
+
+  /* ======== ONLAYN QO'SHIMCHALAR ======== */
+  .screen { flex:1; min-height:0; overflow:auto; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .panelbox { width:min(460px,100%); background:var(--panel); border:1px solid rgba(232,194,106,.35); border-radius:22px; padding:28px 24px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+  .panelbox .logo-badge { width:84px; height:84px; font-size:34px; margin:0 auto 10px; border-radius:20px; }
+  .panelbox h1 { margin:0; font-size:30px; letter-spacing:1px; }
+  .panelbox .sub2 { color:#9fb0cc; letter-spacing:3px; font-size:12px; margin-bottom:18px; }
+  .field { display:block; text-align:left; font-size:13px; color:#9fb0cc; margin:12px 0 6px; }
+  .inp { width:100%; height:50px; border-radius:12px; border:1.5px solid rgba(255,255,255,.18); background:rgba(255,255,255,.06); color:#fff; font-size:18px; padding:0 14px; outline:none; font-family:inherit; }
+  .inp:focus { border-color:var(--gold); }
+  .inp.code { text-transform:uppercase; letter-spacing:6px; text-align:center; font-weight:800; font-size:22px; }
+  .row2 { display:flex; gap:10px; align-items:stretch; }
+  .row2 .inp { flex:1; min-width:0; }
+  .stack { display:flex; flex-direction:column; gap:10px; margin-top:14px; }
+  .gbtn { background:linear-gradient(#f3d27e,#cfa13c); color:#3b2414; font-weight:800; border:0; border-radius:12px; padding:0 22px; height:50px; font-size:16px; cursor:pointer; box-shadow:0 3px 0 #8a6a1f; font-family:inherit; }
+  .gbtn.sec { background:rgba(255,255,255,.1); color:#fff; box-shadow:none; border:1px solid var(--line); }
+  .gbtn:disabled { opacity:.4; cursor:not-allowed; }
+  .gbtn:active:not(:disabled) { transform:translateY(2px); }
+  .or { color:#7f8fab; font-size:13px; margin:14px 0 2px; }
+  .link { color:var(--gold); cursor:pointer; text-decoration:underline; font-size:14px; }
+  .note { margin-top:14px; font-size:12px; color:#7f8fab; }
+
+  .codebox { margin:6px 0 14px; padding:14px; border-radius:16px; background:rgba(232,194,106,.08); border:1px dashed rgba(232,194,106,.5); }
+  .codebox .lbl { font-size:12px; color:#9fb0cc; letter-spacing:2px; }
+  .codebox .big { font-size:46px; font-weight:900; letter-spacing:10px; color:var(--gold); padding-left:10px; }
+  .copyrow { display:flex; gap:8px; justify-content:center; margin-top:6px; }
+  .copyrow button { height:38px; font-size:13px; padding:0 14px; }
+  .seatlist { text-align:left; margin:8px 0 14px; display:flex; flex-direction:column; gap:8px; }
+  .srow { display:flex; align-items:center; gap:12px; padding:8px 12px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid var(--line); min-height:58px; }
+  .srow.empty { border-style:dashed; color:#6f7f9c; justify-content:center; font-size:14px; }
+  .srow .nm { font-size:17px; flex:1; }
+  .srow .tagm { font-size:11px; padding:3px 8px; border-radius:999px; background:rgba(255,255,255,.1); color:#cfe0ff; margin-left:6px; }
+  .srow .x { cursor:pointer; color:#ff8a92; font-size:20px; padding:4px 8px; }
+  .srow .crown svg { width:18px; height:14px; fill:var(--gold); }
+
+  .banner { position:fixed; left:0; right:0; top:0; z-index:100; background:#b3261e; color:#fff; text-align:center; font-size:14px; padding:7px 10px; font-weight:600; }
+  .toast { position:fixed; left:50%; top:74px; transform:translateX(-50%); z-index:101; background:rgba(8,12,24,.96); border:1.5px solid var(--gold); color:#ffe9a6; border-radius:12px; padding:10px 18px; font-weight:600; font-size:15px; box-shadow:0 8px 24px rgba(0,0,0,.6); max-width:90%; text-align:center; animation:toastin .25s ease; }
+  @keyframes toastin { from { opacity:0; transform:translate(-50%,-10px); } }
+  .codepill { display:flex; align-items:center; gap:8px; padding:0 14px; height:44px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); font-size:14px; cursor:pointer; white-space:nowrap; }
+  .codepill b { letter-spacing:3px; color:var(--gold); font-size:16px; }
+  .tmr { margin-left:auto; font-weight:800; font-size:15px; color:var(--gold); min-width:26px; text-align:right; }
+  .tmr.warn { color:#ff6b73; animation:pulse2 .6s infinite; }
+  @keyframes pulse2 { 50% { opacity:.45; } }
+  .tag2 { font-size:11px; opacity:.85; }
+  .emobar { position:absolute; right:12px; top:8px; z-index:30; display:flex; gap:6px; padding:8px; border-radius:14px; background:var(--panel); border:1px solid var(--line); }
+  .emobar button { width:44px; height:44px; font-size:24px; border:0; border-radius:10px; background:rgba(255,255,255,.07); cursor:pointer; }
+  .emobar button:active { transform:scale(.92); }
+  .emof { position:absolute; z-index:40; font-size:46px; pointer-events:none; animation:floatup 2.2s ease-out forwards; filter:drop-shadow(0 4px 8px rgba(0,0,0,.6)); }
+  @keyframes floatup { 0% { opacity:0; transform:translate(-50%,10px) scale(.5); } 15% { opacity:1; transform:translate(-50%,-10px) scale(1.15); } 100% { opacity:0; transform:translate(-50%,-90px) scale(1); } }
+  .loading { margin:auto; color:#9fb0cc; font-size:18px; }
+  .dotoff { background:#6b7690 !important; box-shadow:none !important; }
+  @media (max-width:700px) { .codepill { height:38px; padding:0 10px; font-size:12px; } .codepill b { font-size:13px; } .panelbox { padding:22px 16px; } .codebox .big { font-size:38px; letter-spacing:8px; } .emobar { right:6px; } .emobar button { width:40px; height:40px; } }
+
+  /* ---- tuzatishlar ---- */
+  #app { overflow:clip; width:100%; max-width:100vw; }
+  .stage { overflow:clip; }
+  .msg { bottom:11%; }
+  @media (max-width:700px) { .msg { bottom:9%; } }
+  @media (max-width:520px) {
+    .topbar .brand, .topbar .logo-badge { display:none; }
+    .codepill svg { display:none; }
+    .topbar { padding:0 8px; } .tb-right, .tb-left { gap:6px; }
+    .codepill { padding:0 9px; } .sqbtn { width:36px; height:36px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+  'use strict';
+  const SYM = { H: '♥', D: '♦', C: '♣', S: '♠' }, SUITS = ['H', 'D', 'C', 'S'];
+  const SUIT_NAME = { H: "Toppon (Yurak)", D: "G'ishtin (Romb)", C: 'Chillik', S: "Qarg'a" };
+  const AV_COL = ['#4b7bd8', '#d8844b', '#4bb58a', '#a05bd0', '#d05b7a'];
+  const EMOJIS = ['👍', '😂', '😮', '😡', '👏', '🔥'];
+  const SLOTS = { 2: ['topR', 'topL'], 3: ['right', 'top', 'left'], 4: ['right', 'topR', 'topL', 'left'] };
+  const FLOAT_POS = { me: [16, 76], right: [88, 40], left: [12, 40], top: [50, 22], topR: [72, 22], topL: [28, 22] };
+  const app = document.getElementById('app');
+  const isRed = (s) => s === 'H' || s === 'D';
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
+  };
+
+  /* ---------- holat ---------- */
+  let ws = null, connected = false, everConnected = false, backoff = 600, reconTimer = null;
+  let session = null; try { session = JSON.parse(store.get('c108') || 'null'); } catch (e) { session = null; }
+  let screen = 'home', room = null, V = null;
+  let selected = null, pendingQ = null, modal = null, emoOpen = false, soundOn = store.get('snd108') !== '0';
+  let lastLog = '', popTop = false, floats = [], toast = null, toastTimer = null;
+  let turnEndsLocal = 0, shuffleUntil = 0, shuffleTotal = 5000, shuffleTimer = null;
+  let spectating = false, introEnded = false, introSkipped = false, introSkipVisible = false, introSkipTimer = null, introSkipSoundTimer = null, lastCurrent = null, lastOverSound = false, introAudioOn = false;
+  const draft = { name: store.get('nm108') || '', code: '' };
+  try { const q = new URLSearchParams(location.search).get('room'); if (q) draft.code = q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); } catch (e) { /* ignore */ }
+  const isFile = location.protocol === 'file:';
+
+  /* ---------- ovoz ---------- */
+  let actx = null;
+  function beep(f, d, type) {
+    if (!soundOn) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'triangle'; o.frequency.value = f; g.gain.value = 0.06;
+      o.connect(g); g.connect(actx.destination); o.start();
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d); o.stop(actx.currentTime + d);
+    } catch (e) { /* ignore */ }
+  }
+
+  function playSound(file, volume) {
+    if (!soundOn) return;
+    try { const a = new Audio('/assets/' + file); a.volume = volume == null ? 0.9 : Math.max(0, Math.min(1, volume)); const p = a.play(); if (p && p.catch) p.catch(() => {}); } catch (e) { /* audio may be blocked by browser */ }
+  }
+  function resetIntroUi() {
+    clearTimeout(introSkipTimer); clearTimeout(introSkipSoundTimer);
+    introEnded = false; introSkipped = false; introSkipVisible = false;
+    introSkipTimer = setTimeout(() => { if (room && room.phase === 'intro' && !introEnded && !introSkipped) { introSkipVisible = true; const screen = document.getElementById('introScreen'); if (screen && !document.getElementById('introSkipBtn')) { const b = document.createElement('button'); b.className = 'intro-skip'; b.id = 'introSkipBtn'; b.textContent = 'O‘TKAZIB YUBORISH / SKIP'; b.onclick = skipIntro; screen.appendChild(b); } } }, 10000);
+  }
+  function skipIntro() {
+    if (introSkipped || introEnded || !room || room.phase !== 'intro') return;
+    introSkipped = true; introEnded = true; introSkipVisible = false;
+    clearTimeout(introSkipTimer);
+    const video = document.getElementById('introVideo'); if (video) { try { video.pause(); } catch (e) {} }
+    send({ t: 'introDone' });
+    clearTimeout(introSkipSoundTimer); introSkipSoundTimer = setTimeout(() => playSound('skip.wav', 0.9), 3000);
+    render();
+  }
+
+  /* ---------- ikonkalar ---------- */
+  const ICON = {
+    back: '<svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>',
+    soundOn: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+    soundOff: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
+    gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>',
+    exit: '<svg viewBox="0 0 24 24"><path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5"/><path d="M15 8l4 4-4 4M19 12H9"/></svg>',
+    emoji: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5c1 1.5 2.2 2 3.5 2s2.5-.5 3.5-2M9 9.5v.5M15 9.5v.5"/></svg>',
+    play: '<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>',
+    draw: '<svg viewBox="0 0 24 24"><rect x="8" y="3" width="12" height="16" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/></svg>',
+    users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/></svg>',
+    crown: '<svg viewBox="0 0 24 18"><path d="M2 16L0 4l7 6 5-9 5 9 7-6-2 12z"/></svg>',
+  };
+  function avatar(i) {
+    const c = AV_COL[i % AV_COL.length];
+    return `<svg viewBox="0 0 48 48"><rect width="48" height="48" fill="#1a2438"/><circle cx="24" cy="18" r="8.5" fill="${c}"/><path d="M6 46c0-10 8-16 18-16s18 6 18 16z" fill="${c}" opacity=".85"/></svg>`;
+  }
+
+  /* ---------- ulanish ---------- */
+  function send(o) { if (ws && ws.readyState === 1) { ws.send(JSON.stringify(o)); return true; } return false; }
+  function connect() {
+    if (isFile) return;
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    try { ws = new WebSocket(proto + '://' + location.host + '/ws'); } catch (e) { scheduleReconnect(); return; }
+    ws.onopen = () => {
+      connected = true; everConnected = true; backoff = 600;
+      if (session && session.code && session.token) send({ t: 'rejoin', code: session.code, token: session.token });
+      render();
+    };
+    ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } try { handle(m); } catch (e) { console.error(e); } };
+    ws.onclose = () => { connected = false; render(); scheduleReconnect(); };
+    ws.onerror = () => { /* onclose chaqiriladi */ };
+  }
+  function scheduleReconnect() {
+    clearTimeout(reconTimer);
+    reconTimer = setTimeout(connect, backoff);
+    backoff = Math.min(backoff * 1.6, 5000);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && (!ws || ws.readyState > 1)) { clearTimeout(reconTimer); connect(); } });
+  window.addEventListener('online', () => { if (!ws || ws.readyState > 1) { clearTimeout(reconTimer); connect(); } });
+
+  function saveSession() { if (session) store.set('c108', JSON.stringify(session)); else store.del('c108'); }
+  function showToast(msg) {
+    toast = msg; clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast = null; const t = document.getElementById('toast'); if (t) t.remove(); }, 2800);
+    const old = document.getElementById('toast'); if (old) old.remove();
+    const d = document.createElement('div'); d.className = 'toast'; d.id = 'toast'; d.textContent = msg; document.body.appendChild(d);
+  }
+
+  /* ---------- serverdan xabarlar ---------- */
+  function handle(m) {
+    switch (m.t) {
+      case 'joined':
+        session = { code: m.code, token: m.token, name: m.name }; saveSession();
+        if (m.name) { draft.name = m.name; store.set('nm108', m.name); }
+        break;
+      case 'room': {
+        const previousPhase = room && room.phase;
+        room = m;
+        if (m.phase === 'intro' && previousPhase !== 'intro') { resetIntroUi(); spectating = false; lastOverSound = false; lastCurrent = null; }
+        if (m.phase === 'playing') { introEnded = false; introSkipped = false; introSkipVisible = false; clearTimeout(introSkipTimer); }
+        if (m.phase !== 'intro') clearTimeout(introSkipTimer);
+        if (m.phase === 'lobby') { screen = 'lobby'; V = null; floats = []; selected = null; pendingQ = null; shuffleUntil = 0; }
+        else screen = 'game';
+        render(); break; }
+      case 'state': onState(m); break;
+      case 'emoji': addFloat(m.from, m.e); break;
+      case 'error':
+        showToast(m.msg);
+        if (m.fatal) { session = null; saveSession(); room = null; V = null; screen = 'home'; render(); }
+        break;
+      case 'left':
+        session = null; saveSession(); room = null; V = null; screen = 'home'; floats = []; render(); break;
+      default:
+    }
+  }
+
+  function describe(ev) {
+    const n = (i) => (V.players[i] ? esc(V.players[i].name) : '?');
+    const cn = (c) => c.r + SYM[c.s];
+    switch (ev.t) {
+      case 'play': return `${n(ev.p)}: ${cn(ev.card)}` + (ev.card.r === 'Q' ? ` → ${SYM[ev.suit]}` : '');
+      case 'draw': return ev.penalty ? `${n(ev.p)} jarima: ${ev.n} karta oldi` : `${n(ev.p)} karta oldi`;
+      case 'skip': return `${n(ev.p)} navbatni o'tkazdi (Tuz)`;
+      case 'out': return `${n(ev.p)} kartalardan qutuldi!`;
+      default: return '';
+    }
+  }
+
+  function onState(m) {
+    const first = !V;
+    V = m; screen = 'game';
+    if (selected && !(m.hand.some((c) => c.r + c.s === selected) && m.legal)) selected = null;
+    if (pendingQ && !m.legal) pendingQ = null;
+    const evs = m.events || [];
+    if (evs.length) {
+      lastLog = evs.map(describe).filter(Boolean).join(' · ');
+      if (evs.some((e) => e.t === 'play')) { popTop = true; beep(520, 0.12); }
+      if (evs.some((e) => e.t === 'draw')) beep(300, 0.12);
+      if (evs.some((e) => e.t === 'draw' && e.penalty)) beep(170, 0.3, 'sawtooth');
+      if (evs.some((e) => e.t === 'over')) beep(660, 0.3);
+    } else if (first) lastLog = '';
+    if (evs.some((e) => e.t === 'out' && e.p === m.me)) playSound('yutgan.wav');
+    if (evs.some((e) => e.t === 'over' && e.loser === m.me) && !lastOverSound) { playSound("mag'lub.wav"); lastOverSound = true; }
+    if ((!first && m.current !== lastCurrent && m.current === m.me || first && m.current === m.me) && !m.over && m.roomPhase === 'playing') playSound('navbat.wav', 0.18);
+    lastCurrent = m.current;
+    turnEndsLocal = m.turnLeft ? Date.now() + Math.min(m.turnLeft, m.turnMs) : 0;
+    shuffleTotal = m.shuffleMs || 5000;
+    if (m.pauseLeft > 0) startShuffle(m.pauseLeft);
+    render();
+  }
+
+  /* ---------- aralashtirish tanaffusi ---------- */
+  function shuffling() { return shuffleUntil > Date.now(); }
+  function startShuffle(ms) {
+    const until = Date.now() + ms;
+    if (until > shuffleUntil + 150) shuffleUntil = until;
+    if (!shuffleTimer) shuffleTimer = setInterval(tickShuffle, 150);
+  }
+  function tickShuffle() {
+    const left = shuffleUntil - Date.now();
+    const n = document.getElementById('shNum'); if (n) n.textContent = Math.max(1, Math.ceil(left / 1000));
+    if (left <= 0) { clearInterval(shuffleTimer); shuffleTimer = null; shuffleUntil = 0; render(); }
+  }
+  function shuffleHtml() {
+    const elapsed = Math.max(0, Math.min(shuffleTotal - 100, shuffleTotal - (shuffleUntil - Date.now()))) / 1000;
+    const arrow = '<svg class="sh-arrow %S" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>';
+    const steps = [
+      'Hamma o\'yinchilarning ekranida "Kartalar aralashtirilmoqda..." yozuvi chiqadi.',
+      "Navbati kelgan o'yinchi kutib turadi.",
+      'Stol ustidagi eng oxirgi tashlangan karta joyida qoladi.',
+      "Boshqa tashlangan kartalar yig'iladi, aralashtiriladi va kolodaga qo'shiladi.",
+      `${Math.round(shuffleTotal / 1000)} soniya tugagach, o'yin davom etadi.`,
+    ];
+    const left = Math.max(1, Math.ceil((shuffleUntil - Date.now()) / 1000));
+    return `<div class="sh-panel">
+      <div class="sh-ring"><svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" cx="60" cy="60" r="52" style="animation-duration:${shuffleTotal / 1000}s;animation-delay:-${elapsed.toFixed(2)}s"/></svg><b id="shNum">${left}</b></div>
+      <h2>Tanaffus...</h2><div class="sub">Kartalar aralashtirilmoqda.</div>
+      <div class="sh-cards">${arrow.replace('%S', 'l')}${arrow.replace('%S', 'r')}<div class="card back"></div><div class="card back"></div><div class="card back"></div><div class="card back"></div></div>
+      <ol class="sh-steps">${steps.map((t, i) => `<li><i>${i + 1}</i><span>${t}</span></li>`).join('')}</ol>
+      <div class="sh-foot">Tez orada davom etamiz...</div></div>`;
+  }
+
+  /* ---------- emoji ---------- */
+  function addFloat(from, e) {
+    floats.push({ from, e, t0: Date.now(), id: Math.random() });
+    floats = floats.filter((f) => Date.now() - f.t0 < 2300);
+    if (screen === 'game') render();
+  }
+  function slotOf(idx) {
+    if (!V) return 'me';
+    const n = V.players.length;
+    if (idx === V.me) return 'me';
+    const k = (idx - V.me + n) % n;
+    return SLOTS[n - 1][k - 1];
+  }
+  function floatsHtml() {
+    const t = Date.now();
+    return floats.filter((f) => t - f.t0 < 2300).map((f) => {
+      const p = FLOAT_POS[slotOf(f.from)] || [50, 50];
+      return `<div class="emof" style="left:${p[0]}%;top:${p[1]}%;animation-delay:-${((t - f.t0) / 1000).toFixed(2)}s">${f.e}</div>`;
+    }).join('');
+  }
+
+  /* ---------- kartalar ---------- */
+  function face(c, cls) {
+    const s = SYM[c.s];
+    return `<div class="card ${isRed(c.s) ? 'red' : ''} ${cls || ''}" data-r="${c.r}" data-s="${c.s}">
+      <div class="tl">${c.r}<i>${s}</i></div><div class="mid">${s}</div><div class="br">${c.r}<i>${s}</i></div></div>`;
+  }
+  function fanHtml(n, vertical) {
+    const shown = Math.min(n, 10);
+    if (!shown) return '';
+    const css = getComputedStyle(document.documentElement);
+    const ow = parseFloat(css.getPropertyValue('--ow')) || 40, oh = parseFloat(css.getPropertyValue('--oh')) || 58;
+    const step = vertical ? Math.max(8, Math.min(16, 110 / shown)) : Math.max(7, Math.min(15, 90 / shown));
+    let html = '';
+    for (let i = 0; i < shown; i++) {
+      const off = i - (shown - 1) / 2;
+      if (vertical) html += `<div class="card back" style="left:${(oh - ow) / 2}px;top:${i * step + (ow - oh) / 2}px;transform:rotate(${90 + off * 6}deg)"></div>`;
+      else html += `<div class="card back" style="left:${i * step}px;top:${Math.abs(off) * 1.2}px;transform:rotate(${off * 7}deg)"></div>`;
+    }
+    const w = vertical ? oh : (shown - 1) * step + ow, h = vertical ? (shown - 1) * step + ow : oh + 6;
+    return `<div class="fan ${vertical ? 'v' : ''}" style="width:${w}px;height:${h}px">${html}</div>`;
+  }
+  function layoutHand() {
+    const hand = document.getElementById('hand'); if (!hand) return;
+    const cards = [...hand.querySelectorAll('.card')], n = cards.length; if (!n) return;
+    const cw = cards[0].offsetWidth, avail = hand.clientWidth - 16;
+    const step = n > 1 ? Math.min(cw * 0.68, (avail - cw) / (n - 1)) : 0;
+    const total = (n - 1) * step + cw, start = (hand.clientWidth - total) / 2, a = Math.min(5, 40 / n);
+    cards.forEach((el, i) => {
+      const off = i - (n - 1) / 2, isSel = el.classList.contains('sel');
+      const y = isSel ? -30 : Math.min(26, off * off * (n > 6 ? 0.5 : 1.6)), rot = isSel ? 0 : off * a;
+      el.style.left = start + i * step + 'px';
+      el.style.transform = `translateY(${y}px) rotate(${rot}deg)`;
+      el.style.zIndex = i + 1;
+    });
+  }
+  window.addEventListener('resize', () => { if (screen === 'game') layoutHand(); });
+
+  function rulesHtml() {
+    return `<b>Maqsad:</b> barcha kartalardan qutulish. Oxirgi kartali o'yinchi mag'lub bo'ladi.<br><br>
+    <b>Tashlash:</b> stol ustidagi karta bilan belgisi yoki qiymati mos karta. Mos karta bo'lmasa — kolodadan 1 ta olinadi (mos bo'lsa tashlash mumkin).<br><br>
+    <b>A (Tuz):</b> keyingi o'yinchi navbatini o'tkazadi.<br>
+    <b>Q (Dama):</b> o'z navbatingda istalgan kartaga tashlanadi, yangi belgini o'zing tanlaysan. 6/7 jarimasini bekor qilmaydi.<br>
+    <b>8:</b> tashlagan o'yinchi uni yopishi shart (o'sha belgili karta, 8 yoki Dama). Belgi bo'lmasa — kerakli belgi chiqquncha karta olinadi va chiqqani darhol tashlanadi.<br>
+    <b>7:</b> keyingi o'yinchi 2 karta oladi; qo'lida 7 bo'lsa uzatadi (2 → 4 → 6 → 8).<br>
+    <b>6:</b> keyingi o'yinchi 1 karta oladi; qo'lida 6 bo'lsa uzatadi.<br><br>
+    Navbat soat miliga teskari yo'nalishda. Koloda tugasa, tashlangan kartalar aralashtiriladi (5 soniya tanaffus).<br>
+    <b>Vaqt:</b> har yurish uchun 40 soniya. Kechiksangiz, server o'rningizga yuradi; ketma-ket 2 marta kechiksangiz, avto-rejimga o'tasiz.`;
+  }
+
+  /* ---------- ekranlar ---------- */
+  function banner() {
+    if (isFile) return '<div class="banner">Bu sahifa serverdan ochilishi kerak (faylni ikki marta bosib emas). Pastdagi yo\'riqnomaga qarang.</div>';
+    return connected ? '' : `<div class="banner">${everConnected ? 'Aloqa uzildi — qayta ulanmoqda…' : 'Serverga ulanmoqda…'}</div>`;
+  }
+
+  function renderHome() {
+    app.innerHTML = `${banner()}<div class="screen"><div class="panelbox">
+      <div class="logo-badge">108</div><h1>108</h1><div class="sub2">ONLINE CARD GAME</div>
+      <label class="field" for="nm">Ismingiz</label>
+      <input class="inp" id="nm" maxlength="14" autocomplete="off" placeholder="Masalan: Aziz" value="${esc(draft.name)}">
+      <div class="stack"><button class="gbtn" id="bCreate">Xona yaratish</button></div>
+      <div class="or">yoki do'stingiz kodi bilan</div>
+      <div class="row2"><input class="inp code" id="code" maxlength="5" autocomplete="off" placeholder="KOD" value="${esc(draft.code)}"><button class="gbtn sec" id="bJoin">Qo'shilish</button></div>
+      <div class="stack"><button class="gbtn sec" id="bPractice">🤖 Botlar bilan mashq qilish</button></div>
+      <div class="note"><span class="link" id="bRules">Qoidalar</span></div>
+    </div></div>`;
+    const nm = document.getElementById('nm'), code = document.getElementById('code');
+    nm.oninput = () => { draft.name = nm.value; };
+    code.oninput = () => { code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); draft.code = code.value; };
+    const need = () => { const n = nm.value.trim(); if (!n) { showToast('Avval ismingizni kiriting'); nm.focus(); return null; } store.set('nm108', n); return n; };
+    const ok = () => { if (!connected) { showToast('Serverga ulanmoqda, biroz kuting…'); return false; } return true; };
+    document.getElementById('bCreate').onclick = () => { const n = need(); if (n && ok()) send({ t: 'create', name: n }); };
+    document.getElementById('bPractice').onclick = () => { const n = need(); if (n && ok()) send({ t: 'create', name: n, practice: true }); };
+    document.getElementById('bJoin').onclick = () => {
+      const n = need(); if (!n) return;
+      if (code.value.length !== 5) { showToast('5 belgili xona kodini kiriting'); code.focus(); return; }
+      if (ok()) send({ t: 'join', code: code.value, name: n });
+    };
+    code.onkeydown = nm.onkeydown = (e) => { if (e.key === 'Enter') document.getElementById(code.value.length === 5 ? 'bJoin' : 'bCreate').click(); };
+    document.getElementById('bRules').onclick = () => { modal = 'rules'; render(); };
+    if (modal === 'rules') app.insertAdjacentHTML('beforeend', rulesModal());
+    bindModal();
+  }
+  function rulesModal() {
+    return `<div class="overlay show" id="mov" style="position:fixed"><div class="modal"><h3>Qoidalar</h3><div class="rl">${rulesHtml()}</div>
+      <div style="margin-top:16px;text-align:right"><button class="gbtn" id="mclose">Yopish</button></div></div></div>`;
+  }
+  function bindModal() { const c = document.getElementById('mclose'); if (c) c.onclick = () => { modal = null; render(); }; }
+
+  function inviteLink() { return location.origin + location.pathname + '?room=' + (room ? room.code : ''); }
+  async function copyText(txt, msg) {
+    try { await navigator.clipboard.writeText(txt); showToast(msg); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); showToast(msg); } catch (e2) { showToast(txt); }
+      ta.remove();
+    }
+  }
+
+  function renderLobby() {
+    if (!room) return renderHome();
+    const iAmHost = room.you === room.host, n = room.seats.length;
+    const rows = room.seats.map((s, i) => `<div class="srow"><div class="av">${avatar(i)}</div>
+      <div class="nm">${esc(s.name)}${i === room.you ? ' <span class="tagm">siz</span>' : ''}${s.bot ? ' <span class="tagm">🤖 bot</span>' : ''}${i === room.host ? ' <span class="crown">' + ICON.crown + '</span>' : ''}</div>
+      ${s.bot ? '' : `<i class="dot ${s.connected ? '' : 'dotoff'}"></i>`}
+      ${iAmHost && s.bot ? `<span class="x" data-rm="${i}" title="Olib tashlash">✕</span>` : ''}</div>`).join('');
+    const empties = Array.from({ length: Math.max(0, 5 - n) }, () => '<div class="srow empty">Bo\'sh joy…</div>').join('');
+    app.innerHTML = `${banner()}<div class="topbar"><div class="tb-left"><button class="sqbtn" id="bLeave" title="Chiqish">${ICON.back}</button><div class="logo-badge">108</div><div class="brand"><b>108</b><span>ONLINE CARD GAME</span></div></div>
+      <div class="tb-right"><button class="sqbtn" id="bSnd">${soundOn ? ICON.soundOn : ICON.soundOff}</button><button class="sqbtn" id="bSet">${ICON.gear}</button></div></div>
+      <div class="screen"><div class="panelbox">
+        <div class="codebox"><div class="lbl">XONA KODI</div><div class="big">${esc(room.code)}</div>
+          <div class="copyrow"><button class="gbtn sec" id="bCopyCode">Kodni nusxalash</button><button class="gbtn sec" id="bCopyLink">Havolani nusxalash</button></div></div>
+        <div style="text-align:left;color:#9fb0cc;font-size:13px">O'yinchilar: ${n}/5 ${n < 3 ? '· kamida 3 kerak' : ''}</div>
+        <div class="seatlist">${rows}${empties}</div>
+        ${iAmHost ? `<div class="stack"><button class="gbtn sec" id="bBot" ${n >= 5 ? 'disabled' : ''}>🤖 Bot qo'shish</button><button class="gbtn" id="bStart" ${n < 3 ? 'disabled' : ''}>O'yinni boshlash</button></div>
+          <div class="note">${n < 3 ? "Do'stlaringizga kodni yuboring yoki bot qo'shing." : "Tayyor bo'lsangiz, boshlang!"}</div>`
+        : `<div class="note" style="font-size:14px">Xona egasi o'yinni boshlashini kuting…</div>`}
+      </div></div>${modal === 'rules' ? rulesModal() : ''}`;
+    document.getElementById('bLeave').onclick = () => { if (confirm('Xonadan chiqasizmi?')) send({ t: 'leave' }); };
+    document.getElementById('bSnd').onclick = () => { soundOn = !soundOn; store.set('snd108', soundOn ? '1' : '0'); render(); };
+    document.getElementById('bSet').onclick = () => { modal = 'rules'; render(); };
+    document.getElementById('bCopyCode').onclick = () => copyText(room.code, 'Kod nusxalandi');
+    document.getElementById('bCopyLink').onclick = () => copyText(inviteLink(), 'Havola nusxalandi');
+    const b = document.getElementById('bBot'); if (b) b.onclick = () => send({ t: 'addBot' });
+    const s = document.getElementById('bStart'); if (s) s.onclick = () => send({ t: 'start' });
+    app.querySelectorAll('[data-rm]').forEach((el) => { el.onclick = () => send({ t: 'removeBot', idx: +el.dataset.rm }); });
+    bindModal();
+  }
+
+  function seatHtml(idx, slot) {
+    const p = V.players[idx], vertical = slot === 'left' || slot === 'right';
+    const turn = V.current === idx && !V.over, showT = turn && turnEndsLocal > Date.now();
+    let sub = p.out ? 'chiqdi ✓' : p.count + ' ta karta';
+    if (p.left) sub = 'chiqib ketdi';
+    return `<div class="seat s-${slot} ${p.out ? 'out' : ''}">
+      <div class="chip ${turn ? 'turn' : ''}"><div class="av">${avatar(idx)}</div>
+        <div class="info"><div class="nm">${p.bot ? '🤖 ' : ''}${esc(p.name)}</div>
+        <div class="ct">${sub} <i class="dot ${p.connected ? '' : 'dotoff'}"></i>${!p.connected && !p.bot && !p.left ? ' <span class="tag2">uzildi</span>' : ''}${p.auto ? ' <span class="tag2">avto</span>' : ''}</div></div>
+        ${showT ? '<span class="tmr" data-tmr></span>' : ''}</div>
+      ${p.out ? '' : fanHtml(p.count, vertical)}</div>`;
+  }
+
+  function renderGame() {
+    if (!V || !room) { app.innerHTML = `${banner()}<div class="loading">Yuklanmoqda…</div>`; return; }
+    const me = V.me, n = V.players.length, P = V.players[me];
+    const legal = V.legal, canDraw = !!(legal && legal.draw), canPass = !!(legal && legal.pass);
+    const playable = new Set(legal ? legal.play : []);
+    const myTurn = room.phase === 'playing' && V.roomPhase === 'playing' && !V.over && !P.out && !spectating && V.current === me && !shuffling();
+    const top = V.top;
+
+    let status = '';
+    if (!V.over) {
+      if (P.out) status = 'Siz qutuldingiz! Boshqalarni kuzating 🎉';
+      else if (V.current === me) {
+        if (shuffling()) status = '';
+        else if (V.justDrew) status = "Olingan karta mos — tashla yoki o'tkaz";
+        else if (V.phase === 'cover') status = `8 ni yop: ${SYM[V.suit]} belgili karta, 8 yoki Dama` + (canDraw ? ' (kolodadan ol)' : '');
+        else if (V.penalty) status = `Jarimani uzat (${V.penalty.rank}) yoki +${V.penalty.amount} karta ol`;
+        else status = canDraw ? "Mos karta yo'q — kolodadan ol" : 'Sening navbating';
+      } else status = `${esc(V.players[V.current].name)} o'ylanmoqda...`;
+      if (P.auto && !P.out) status = 'Avto-rejim: siz kechikdingiz. Yurish qilsangiz, qaytadan boshqarasiz';
+    }
+
+    const slots = SLOTS[n - 1];
+    const seats = []; for (let k = 1; k < n; k++) seats.push(seatHtml((me + k) % n, slots[k - 1]));
+
+    const handHtml = V.hand.map((c) => {
+      const key = c.r + c.s;
+      return face(c, (selected === key ? 'sel ' : '') + (myTurn && !playable.has(key) ? 'dim' : ''));
+    }).join('');
+    const selOk = !!(selected && playable.has(selected) && myTurn);
+    const turnMe = room.phase === 'playing' && V.roomPhase === 'playing' && V.current === me && !V.over && !P.out && !spectating, showTme = turnMe && turnEndsLocal > Date.now();
+    const iAmHost = V.host === me;
+
+    app.innerHTML = `${banner()}
+      <div class="topbar">
+        <div class="tb-left"><button class="sqbtn" id="bBack" title="Chiqish">${ICON.back}</button><div class="logo-badge">108</div><div class="brand"><b>108</b><span>ONLINE CARD GAME</span></div></div>
+        <div class="tb-right">
+          <div class="codepill" id="bCode" title="Kodni nusxalash">Xona: <b>${esc(room.code)}</b> ${ICON.users.replace('<svg', '<svg width="18" height="18" style="stroke:#9fb0cc;fill:none;stroke-width:1.8"')} ${n}/5</div>
+          <button class="sqbtn" id="bEmo" title="Reaksiya">${ICON.emoji}</button>
+          <button class="sqbtn" id="bSnd" title="Ovoz">${soundOn ? ICON.soundOn : ICON.soundOff}</button>
+          <button class="sqbtn" id="bSet" title="Qoidalar">${ICON.gear}</button>
+          <button class="sqbtn" id="bExit" title="Chiqish">${ICON.exit}</button>
+        </div>
+      </div>
+      <div class="stage">
+        ${emoOpen ? `<div class="emobar">${EMOJIS.map((e) => `<button data-e="${e}">${e}</button>`).join('')}</div>` : ''}
+        <div class="area">
+          <div class="oval"><div class="felt">
+            <div class="watermark"><b>108</b></div>
+            <div class="center">
+              <div class="pile"><div class="deck-stack" id="deck"><div class="card back"></div><div class="card back"></div><div class="card back"></div></div><div class="cap">Koloda: ${V.deck}</div></div>
+              <div class="pile">${face(top, popTop ? 'pop' : '')}<div class="suitdot ${isRed(V.suit) ? 'red' : 'blk'}">${SYM[V.suit]}</div></div>
+            </div>
+            ${V.penalty ? `<div class="penalty">${V.penalty.rank} jarima: +${V.penalty.amount} karta</div>` : ''}
+            <div class="msg"><div class="log">${lastLog}</div>${status ? `<div class="st">${status}</div>` : ''}</div>
+          </div></div>
+          ${seats.join('')}
+        </div>
+        <div class="me">
+          <div class="chip ${turnMe ? 'turn' : ''} ${P.out ? '' : ''}" style="${V.over && V.loser !== me ? 'border-color:#32d27c' : ''}">
+            <div class="av">${avatar(me)}</div>
+            <div class="info"><div class="nm">${esc(P.name)} ${iAmHost ? ICON.crown : ''}</div><div class="ct">${P.out ? 'qutuldingiz ✓' : P.count + ' ta karta'} <i class="dot"></i></div></div>
+            ${showTme ? '<span class="tmr" data-tmr></span>' : ''}</div>
+          <div class="hand" id="hand">${handHtml}</div>
+          <div class="actions">
+            <button class="btn play" id="play" ${selOk ? '' : 'disabled'}>${ICON.play}Tashlash</button>
+            <button class="btn draw" id="draw" ${myTurn && canDraw ? '' : 'disabled'}>${ICON.draw}Kolodadan olish</button>
+            ${canPass ? `<button class="btn pass" id="pass" ${myTurn ? '' : 'disabled'}>O'tkazish</button>` : ''}
+          </div>
+        </div>
+        <div class="panel p-status"><div class="row">${ICON.users}<span>O'yinchilar: ${n}/5</span></div>
+          <div class="row"><span style="margin-left:36px">Navbat: <b style="color:#27d36b">${V.over ? '—' : esc(V.players[V.current].name)}</b> <i class="dot"></i></span></div></div>
+        <div class="panel p-legend"><h4>Jarimalar va maxsus kartalar</h4>
+          ${SUITS.map((s) => `<div class="li"><span class="sy" style="color:${isRed(s) ? 'var(--red)' : '#fff'}">${SYM[s]}</span>${SUIT_NAME[s]}</div>`).join('')}<hr>
+          <div class="li"><span class="pdot" style="background:#e0414c"></span>7 – 2 karta jarima</div><div class="li"><span class="pdot" style="background:#e8b64a"></span>6 – 1 karta jarima</div>
+          <div class="li"><span class="sy">A</span>navbat o'tkaziladi</div><div class="li"><span class="sy">Q</span>belgi tanlanadi</div><div class="li"><span class="sy">8</span>yopish shart</div></div>
+        ${floatsHtml()}
+        <div class="overlay ${pendingQ ? 'show' : ''}" id="qov"><h2>Belgini tanla</h2>
+          <div class="suitpick">${SUITS.map((s) => `<div class="sp ${isRed(s) ? 'red' : 'blk'}" data-s="${s}">${SYM[s]}</div>`).join('')}</div>
+          <button class="gbtn sec" id="qcancel">Bekor qilish</button></div>
+        <div class="overlay shuffle ${shuffling() ? 'show' : ''}" id="shov">${shuffling() ? shuffleHtml() : ''}</div>
+        ${modal === 'rules' ? `<div class="overlay show"><div class="modal"><h3>Qoidalar</h3><div class="rl">${rulesHtml()}</div><div style="margin-top:16px;text-align:right"><button class="gbtn" id="mclose">Yopish</button></div></div></div>` : ''}
+        ${P.out && !spectating ? `<div class="result-screen"><div class="result-card"><h2>G'alaba! 🎉</h2><p>Siz o'yindan muvaffaqiyatli chiqdingiz.</p><div class="result-actions"><button class="gbtn" id="watch">O'YINNI KUZATISH</button><button class="gbtn sec" id="homeAfterWin">ASOSIY OYNAGA QAYTISH</button></div></div></div>` : ''}
+        ${V.over && V.loser === me ? `<div class="result-screen"><div class="result-card"><h2>Siz mag‘lub bo‘ldingiz 😅</h2><p>O‘yin tugadi.</p><div class="result-actions">${iAmHost ? '<button class="gbtn" id="again">Qayta o‘ynash</button>' : ''}<button class="gbtn sec" id="leave2">ASOSIY OYNAGA QAYTISH</button></div></div></div>` : ''}
+        ${V.over && V.loser !== me && !P.out && !spectating ? `<div class="overlay show" id="endov"><h2>O‘yin tugadi</h2><p>Mag‘lub: ${V.loser !== null ? esc(V.players[V.loser].name) : ''}</p>${iAmHost ? '<button class="gbtn" id="again">Qayta o‘ynash</button>' : '<p>Xona egasi qayta boshlashini kuting…</p>'}<button class="gbtn sec" id="leave2">Chiqish</button></div>` : ''}
+        ${room.phase === 'intro' && !introSkipped ? `<div class="intro-screen" id="introScreen">${introEnded ? '<div class="intro-wait"><span class="silver-mark">♛ 108</span><br>Qolgan o‘yinchilar videoni tugatishini kuting…</div>' : `<video id="introVideo" autoplay ${introAudioOn ? "" : "muted"} playsinline preload="auto"><source src="/assets/108.mp4" type="video/mp4"></video><button class="intro-sound" id="introSoundBtn">🔊 INTRO OVOZINI YOQISH</button><div class="intro-wait"><span class="silver-mark">♛ 108</span><br>ONLINE CARD GAME</div>${introSkipVisible ? '<button class="intro-skip" id="introSkipBtn">O‘TKAZIB YUBORISH / SKIP</button>' : ''}`}</div>` : ''}
+      </div>`;
+
+    document.querySelectorAll('.hand .card').forEach((el) => {
+      el.onclick = () => {
+        if (!myTurn) return;
+        const key = el.dataset.r + el.dataset.s;
+        selected = selected === key ? null : key; render();
+      };
+    });
+    popTop = false;
+    document.getElementById('play').onclick = onPlay;
+    document.getElementById('draw').onclick = onDraw;
+    document.getElementById('deck').onclick = onDraw;
+    const pb = document.getElementById('pass'); if (pb) pb.onclick = () => { if (myTurn) send({ t: 'move', move: { type: 'pass' } }); };
+    const leave = () => { if (confirm("O'yindan chiqasizmi? O'rningizga bot o'ynaydi.")) send({ t: 'leave' }); };
+    document.getElementById('bBack').onclick = leave; document.getElementById('bExit').onclick = leave;
+    const leave2 = document.getElementById('leave2'); if (leave2) leave2.onclick = () => send({ t: 'leave' });
+    const watchBtn = document.getElementById('watch'); if (watchBtn) watchBtn.onclick = () => { spectating = true; render(); };
+    const homeWinBtn = document.getElementById('homeAfterWin'); if (homeWinBtn) homeWinBtn.onclick = () => send({ t: 'leave' });
+    const skipBtn = document.getElementById('introSkipBtn'); if (skipBtn) skipBtn.onclick = skipIntro;
+    const introSoundBtn = document.getElementById('introSoundBtn');
+    const introVideo = document.getElementById('introVideo');
+    if (introSoundBtn && introVideo) introSoundBtn.onclick = () => { introAudioOn = !introAudioOn; introVideo.muted = !introAudioOn; introVideo.volume = 1; introSoundBtn.textContent = introAudioOn ? '🔇 INTRO OVOZINI O‘CHIRISH' : '🔊 INTRO OVOZINI YOQISH'; introVideo.play().catch(() => showToast('Intro ovozini yoqish uchun ekranga yana bosing')); };
+    if (introVideo) { introVideo.onended = () => { if (!introEnded) { introEnded = true; clearTimeout(introSkipTimer); send({ t: 'introDone' }); render(); } }; introVideo.onerror = () => { if (!introEnded) { introEnded = true; clearTimeout(introSkipTimer); send({ t: 'introDone' }); render(); } }; const pp = introVideo.play(); if (pp && pp.catch) pp.catch(() => { showToast('Videoni boshlash uchun ekranga bosing'); introVideo.onclick = () => introVideo.play().catch(() => {}); }); }
+    document.getElementById('bSnd').onclick = () => { soundOn = !soundOn; store.set('snd108', soundOn ? '1' : '0'); render(); };
+    document.getElementById('bSet').onclick = () => { modal = 'rules'; render(); };
+    document.getElementById('bCode').onclick = () => copyText(room.code, 'Xona kodi nusxalandi');
+    document.getElementById('bEmo').onclick = () => { emoOpen = !emoOpen; render(); };
+    app.querySelectorAll('.emobar button').forEach((b) => { b.onclick = () => { send({ t: 'emoji', e: b.dataset.e }); emoOpen = false; render(); }; });
+    const ag = document.getElementById('again'); if (ag) ag.onclick = () => send({ t: 'rematch' });
+    document.querySelectorAll('#qov .sp').forEach((el) => {
+      el.onclick = () => { const card = pendingQ; pendingQ = null; selected = null; send({ t: 'move', move: { type: 'play', card, suit: el.dataset.s } }); };
+    });
+    document.getElementById('qcancel').onclick = () => { pendingQ = null; render(); };
+    bindModal();
+    layoutHand();
+    tickTimers();
+  }
+
+  function onPlay() {
+    if (!selected || !V || !V.legal) return;
+    const card = { r: selected.slice(0, -1), s: selected.slice(-1) };
+    if (card.r === 'Q') { pendingQ = card; render(); return; }
+    selected = null; send({ t: 'move', move: { type: 'play', card } });
+  }
+  function onDraw() {
+    if (!V || !V.legal || !V.legal.draw || V.current !== V.me || shuffling()) return;
+    selected = null; send({ t: 'move', move: { type: 'draw' } });
+  }
+
+  /* ---------- taymer yangilanishi (qayta chizmasdan) ---------- */
+  function tickTimers() {
+    const left = Math.ceil((turnEndsLocal - Date.now()) / 1000);
+    document.querySelectorAll('[data-tmr]').forEach((el) => {
+      el.textContent = left > 0 ? left : '';
+      el.classList.toggle('warn', left > 0 && left <= 10);
+    });
+  }
+  setInterval(tickTimers, 250);
+
+  function render() {
+    if (screen === 'game' && room) renderGame();
+    else if (screen === 'lobby' && room) renderLobby();
+    else { screen = 'home'; renderHome(); }
+    if (toast && !document.getElementById('toast')) { const d = document.createElement('div'); d.className = 'toast'; d.id = 'toast'; d.textContent = toast; document.body.appendChild(d); }
+  }
+
+  render();
+  connect();
+})();
+</script>
+</body>
+</html>

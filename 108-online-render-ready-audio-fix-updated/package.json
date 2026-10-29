@@ -1,0 +1,13 @@
+{
+  "name": "oyin-108",
+  "version": "1.0.0",
+  "private": true,
+  "description": "108 — onlayn karta o'yini (3–5 o'yinchi, xona kodi orqali)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js && node test_server.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED"
+}
